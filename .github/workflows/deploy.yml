@@ -1,0 +1,61 @@
+name: Deploy to AWS Lambda
+
+on:
+  workflow_dispatch:
+  inputs:
+    env:
+      description: Environment
+      type: choice
+      required: true
+        default: dev
+        options:
+          - dev
+          - prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Use Node js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "18.x"
+
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Serverless Framework
+        run: npm install -g serverless
+
+      - name: Deploy to AWS
+        run: |
+          sls deploy --stage ${{inputs.env}} --region us-east-1 --verbose
+        env:
+          DATABASE_HOST: ${{secrets.DATABASE_HOST}}
+          DATABASE_PORT: ${{secrets.DATABASE_PORT}}
+          DATABASE_USER: ${{secrets.DATABASE_USER}}
+          DATABASE_PASS: ${{secrets.DATABASE_PASS}}
+          DATABASE_NAME: ${{secrets.DATABASE_NAME}}
+          DATABASE: ${{secrets.DATABASE}}
+
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+          S3_DEPLOY_BUCKET: ${{secrets.S3_DEPLOY_BUCKET}}
+          DEPLOY_REGION: ${{secrets.DEPLOY_REGION}}
+
+          SECURITY_GROUP: ${{secrets.SECURITY_GROUP}}
+          SUBNET_1: ${{secrets.SUBNET_1}}
+          SUBNET_2: ${{secrets.SUBNET_2}}

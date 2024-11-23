@@ -1,0 +1,9 @@
+.idea/
+.vscode/settings.json
+node_modules/
+build/
+tmp/
+temp/
+dist/
+*.sqlite3
+.env

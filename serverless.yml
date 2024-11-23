@@ -1,0 +1,59 @@
+service: star-wars-api
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: ${sls:stage}
+  stackName: ${self:service}-${sls:stage}-${self:custom.stack}
+  region: ${env:DEPLOY_REGION}
+  endpointType: REGIONAL
+  region: us-east-1
+  apiName: ${self:service}-${self:provider.stage}-${self:custom.stack}-api
+  timeout: 900
+  memorySize: 1024
+  deploymentBucket:
+    name: ${env:S3_DEPLOY_BUCKET}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - lambda:InvokeFunction
+          Resource:
+            - arn:aws:lambda:us-east-1
+
+  vpc:
+    securityGroupIds:
+      - ${env:SECURITY_GROUP}
+    subnetIds:
+      - ${env:SUBNET_1}
+      - ${env:SUBNET_2}
+
+functions:
+  app:
+    handler: dist/lambda.handler
+    name: ${self:service}-${self:provider.stage}-${self:custom.stack}-app
+    environment:
+      DATABASE_HOST: ${env:DATABASE_HOST}
+      DATABASE_PORT: ${env:DATABASE_PORT}
+      DATABASE_USER: ${env:DATABASE_USER}
+      DATABASE_PASS: ${env:DATABASE_PASS}
+      DATABASE_NAME: ${env:DATABASE_NAME}
+      DATABASE: ${env:DATABASE}
+
+    events:
+      - http: ANY /
+      - http: ANY /{proxy+}
+
+configValidationMode: error
+
+package:
+  patterns:
+    # exclude everything
+    - "!./**"
+    # but include dist, node_modules, ormconfig and package.json
+    - "dist/**"
+    - "node_modules/**"
+    - "ormconfig.json"
+    - "package.json"
+
